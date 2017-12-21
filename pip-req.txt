@@ -1,0 +1,4 @@
+werkzeug==0.13
+mongoengine==0.15.0
+requests==2.18.4
+lxml==4.1.1
