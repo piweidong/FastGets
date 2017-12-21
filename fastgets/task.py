@@ -20,18 +20,16 @@ class Task(Document):
     post_payload = DictField()
     temp_data = DictField()
     timeout = IntField(default=5)
-
     encoding = StringField()
 
     def new(self):
         task = Task.from_json(self.to_json())
-        task.id = str(uuid.uuid4())
-        task.page_raw = None
+        del task.id
         return task
 
     def _prepare_kwds(self):
         kwds = {
-            'timeout': self.timeout or 5,
+            'timeout': self.timeout,
             'headers': self.headers
         }
         return kwds
@@ -66,6 +64,9 @@ class Task(Document):
         self.func(self, page_raw)
 
     def exec(self):
+        assert not self.id
+        self.id = str(uuid.uuid4())
+
         start_time = time.time()
         logger.info('[crawl][{}]'.format(self.url))
         page_raw = self.crawl()
