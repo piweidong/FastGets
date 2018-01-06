@@ -1,4 +1,5 @@
 import argparse
+import importlib.util
 from werkzeug.utils import import_string
 from .. import env
 
@@ -32,5 +33,11 @@ def config_parse():
     parser.add_argument('-c', '--config', help='config path. for example, myproject.config')
     args = parser.parse_args()
 
-    config = import_string(args.config)
+    if args.config.endswith('.py'):
+        spec = importlib.util.spec_from_file_location('fastgets._config', args.config)
+        config = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(config)
+    else:
+        config = import_string(args.config)
+
     init_fastgets_env(config)

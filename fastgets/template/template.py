@@ -38,6 +38,7 @@ class Template(object):
     @classmethod
     def get_list(cls):
         templates = []
+        print(env.TEMPLATES_DIR)
         for _, _, file_names in os.walk(env.TEMPLATES_DIR):
             for file_name in file_names:
                 path = env.TEMPLATES_DIR + file_name

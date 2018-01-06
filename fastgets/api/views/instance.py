@@ -2,9 +2,10 @@
 
 from flask import Blueprint, jsonify, request
 
-from fastgets.core.errors import ApiError
 from fastgets.models.instance import Instance
+from fastgets.core.errors import ApiError
 from fastgets.process import Process
+
 
 instance_blueprint = Blueprint('instance', __name__, url_prefix='/instance')
 

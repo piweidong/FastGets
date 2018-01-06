@@ -92,13 +92,13 @@ def run():
             time.sleep(60)  # 需要 sleep 较长时间，否则会把 mongodb 打爆
 
 
-def main(thread_num):
-    for i in range(thread_num):
+def main():
+    env.mode = env.DISTRIBUTED
+    config_parse()
+    for i in range(10):
         t = threading.Thread(target=run)
         t.start()
 
 
 if __name__ == '__main__':
-    env.mode = env.DISTRIBUTED
-    config_parse()
-    main(10)
+    main()
