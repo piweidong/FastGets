@@ -1,13 +1,7 @@
 # coding: utf8
 
-import logging
+from .task import Task
+from .template import TemplateBase
+from .writer import CsvWriter
 
-logger = logging.getLogger('FastGets')
-logger.setLevel(logging.DEBUG)
-
-ch = logging.StreamHandler()
-ch.setLevel(logging.INFO)
-
-fomatter = logging.Formatter('[%(asctime)s][%(levelname)s][Thread:%(threadName)s] %(message)s')
-ch.setFormatter(fomatter)
-logger.addHandler(ch)
+from .core.log import logger  # 触发 logging 配置
