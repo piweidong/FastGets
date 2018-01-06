@@ -2,7 +2,7 @@
 
 from flask import Blueprint, jsonify, request
 
-from fastgets.errors import ApiError
+from fastgets.core.errors import ApiError
 from fastgets.models.instance import Instance
 from fastgets.process import Process
 
@@ -16,7 +16,7 @@ def instance_list_view():
         for id, process in Process.get_dict().items()
     }
 
-    instances = Instance.objects.order_by('-last_active_at').skip(request.start).limit(request.limit)
+    instances = Instance.objects.order_by('-create_at').skip(request.start).limit(request.limit)
     instances = [
         instance.to_api_json(process=process_dict.get(instance.process_id))
         for instance in instances

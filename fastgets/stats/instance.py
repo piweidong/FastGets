@@ -20,9 +20,9 @@ class InstanceStats(object):
             return False
 
     @classmethod
-    def set_active(cls, instance_id, pipe=None):
+    def set_task_active(cls, instance_id, pipe=None):
         client = pipe or get_client()
-        client.set('{}:ative_at'.format(instance_id), int(time.time()))  # 精确到秒就行了
+        client.set('{}:task_ative_at'.format(instance_id), int(time.time()))  # 精确到秒就行了
 
     @classmethod
     def add(cls, instance_id, name, pipe=None):
@@ -71,14 +71,15 @@ class InstanceStats(object):
     @classmethod
     def get(cls, instance_id):
         with get_client().pipeline() as pipe:
-            pipe.get('{}:active_at'.format(instance_id))
+            pipe.get('{}:task_ative_at'.format(instance_id))
             pipe.get('{}:num_stats'.format(instance_id))
             pipe.hgetall('{}:time_stats'.format(instance_id))
-            active_at, num_stats, time_stats = pipe.execute()
+            task_ative_at, num_stats, time_stats = pipe.execute()
 
-            if active_at:
-                active_at = utc2datetime(int(active_at))
+            if task_ative_at:
+                task_ative_at = utc2datetime(int(task_ative_at))
 
+            num_stats = num_stats or {}
             total_num = int(num_stats.get('total') or 0)
             success_num = int(num_stats.get('success') or 0)
             crawl_error_num = int(num_stats.get('crawl_error') or 0)
@@ -90,5 +91,5 @@ class InstanceStats(object):
                 avg_crawl_seconds = time_stats['crawl'] / success_num
                 avg_process_seconds = time_stats['process'] / success_num
 
-            return active_at, total_num, success_num, crawl_error_num, process_error_num, \
+            return task_ative_at, total_num, success_num, crawl_error_num, process_error_num, \
                 avg_crawl_seconds, avg_process_seconds

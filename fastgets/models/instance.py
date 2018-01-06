@@ -18,6 +18,7 @@ class Instance(Document):
     start_at = DateTimeField()
     finish_at = DateTimeField()
     stop_at = DateTimeField()
+    update_at = DateTimeField()
 
     total_task_num = IntField()
     pending_task_num = IntField()
@@ -26,7 +27,7 @@ class Instance(Document):
     process_error_task_num = IntField()
     avg_crawl_seconds = FloatField()
     avg_process_seconds = FloatField()
-    active_at = DateTimeField()
+    task_active_at = DateTimeField()
 
     traceback_string = StringField()
 
@@ -40,7 +41,7 @@ class Instance(Document):
             return '已完成'
         elif self.stop_at:
             return '已停止'
-        elif self.active_at and (datetime.datetime.now()-self.active_at).seconds < 10:
+        elif self.task_active_at and (datetime.datetime.now()-self.task_active_at).seconds < 10:
             return '正在运行'
         else:
             return '异常'
@@ -67,12 +68,12 @@ class Instance(Document):
         pass
 
     def to_api_json(self, **kwargs):
-        active_at = None
-        if self.active_at:
-            if (datetime.datetime.now()-self.active_at).seconds <= 5:
-                active_at = '刚刚'
+        task_active_at = None
+        if self.task_active_at:
+            if (datetime.datetime.now()-self.task_active_at).seconds <= 5:
+                task_active_at = '刚刚'
             else:
-                active_at = self.active_at.strftime('%m-%d %H:%M:%S')
+                task_active_at = self.task_active_at.strftime('%m-%d %H:%M:%S')
 
         json_dict = dict(
             id=self.id,
@@ -88,7 +89,7 @@ class Instance(Document):
             crawl_error_task_num=self.crawl_error_task_num,
             process_error_task_num=self.process_error_task_num,
 
-            active_at=active_at,
+            task_active_at=task_active_at,
             status=self.status,
         )
         json_dict.update(kwargs)
@@ -103,8 +104,9 @@ class Instance(Document):
             return _cached_instance_ids
         else:
             _cached_instance_ids = []
+            _cached_at = now
             for each in cls.objects(
-                    stop_at__exists=False, active_at__gte=now-datetime.timedelta(seconds=10)
+                    stop_at__exists=False, update_at__gte=now-datetime.timedelta(seconds=30)
             ).only('id').as_pymongo().no_cache():
                 _cached_instance_ids.append(each['_id'])
             return _cached_instance_ids

@@ -3,21 +3,21 @@
 import threading
 import time
 
-from . import env
-from .models.instance import Instance
-from .core.errors import CrawlError, ProcessError
-from .core.client import get_client
-from .core.log import logger
-from .pool import CrawlErrorPool, ProcessErrorPool, PendingPool
-from .stats import InstanceStats, ClusterStats
-from .utils import get_current_inner_ip, get_thread_name, format_exception
-from .models import UnknownErrorLog
+from fastgets import env
+from fastgets.core import config_parse
+from fastgets.core.errors import CrawlError, ProcessError
+from fastgets.core.client import get_client
+from fastgets.core.log import logger
+from fastgets.pool import CrawlErrorPool, ProcessErrorPool, PendingPool
+from fastgets.stats import InstanceStats, ClusterStats
+from fastgets.utils import get_current_inner_ip, get_thread_name, format_exception
+
 
 inner_ip = get_current_inner_ip()
 
 
 def finish(task):
-    InstanceStats.set_active(task.instance_id)
+    InstanceStats.set_task_active(task.instance_id)
 
     start_time = time.time()
 
@@ -62,6 +62,8 @@ def finish(task):
 
 
 def run():
+    from fastgets.models import Instance, UnknownErrorLog  # 确保读取 config 后再连接 MongoDB
+
     logger.info('worker start')
     while 1:
         try:
@@ -98,4 +100,5 @@ def main(thread_num):
 
 if __name__ == '__main__':
     env.mode = env.DISTRIBUTED
+    config_parse()
     main(10)

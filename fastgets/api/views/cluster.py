@@ -20,7 +20,7 @@ def cluster_second_stats_view():
     success_num_list = []
     time_list = []
 
-    for i, (k, v) in enumerate(ClusterStats.get_second_stats(num=60)):
+    for i, (k, v) in enumerate(ClusterStats.get_recent_stats(num=60)):
         process_error_num_list.append(v.get('process_error') or 0)
         crawl_error_num_list.append(v.get('crawl_error') or 0)
         success_num_list.append(v.get('success') or 0)

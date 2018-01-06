@@ -3,6 +3,7 @@
 from .. import env
 from ..core.client import get_client
 from ..core.errors import FrameError
+from ..core.log import logger
 from ..task import Task
 from .running import RunningPool
 

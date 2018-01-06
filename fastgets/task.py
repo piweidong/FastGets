@@ -6,9 +6,9 @@ from werkzeug.utils import import_string
 from mongoengine import *
 
 from . import env
+from .core.log import logger
 from .core.errors import CrawlError, ProcessError, FrameError
 from .core.client import get_client
-from .config import ROOT_DIR
 from .utils import format_exception, create_id
 
 
@@ -76,9 +76,9 @@ class Task(Document):
 
         module = template_class.__module__
         if env.mode == env.DISTRIBUTED and env.is_loading_seed_tasks:
-            path = sys.argv[0][:-3]
-            if ROOT_DIR in path:
-                path = path.split(ROOT_DIR)[1]
+            path = sys.argv[0][:-3]  # 去除 .py 后缀
+            if env.PROJECT_ROOT_DIR in path:
+                path = path.split(env.PROJECT_ROOT_DIR)[1]
             module = path.replace('/', '.')
 
         self.template_class_path = '{}:{}'.format(module, template_class.__name__)
@@ -150,11 +150,13 @@ class Task(Document):
 
         assert not self.instance_id and env.instance_id
         self.instance_id = env.instance_id
+        self.id = '{}_{}'.format(create_id(), self.instance_id)
         self.second_rate_limit = self.template_class.config.get('second_rate_limit', 30)
 
         while 1:
             if PendingPool.get_current_task_num(self.instance_id) >= \
                     self.template_class.config.get('max_pending_task_num', 1000):
+                logger.debug('pending pool is full !')
                 time.sleep(1)
             else:
                 PendingPool.add(self)
@@ -182,6 +184,7 @@ class Task(Document):
         PendingPool.add(self)
 
     def add(self, reason=None):
+
         if env.mode == env.DISTRIBUTED:
             if env.is_loading_seed_tasks:
                 # template
@@ -219,6 +222,7 @@ class Task(Document):
         if task_json:
             return cls.from_json(task_json)
 
-    def save(self):
+    def save(self, pipe=None):
         assert self.id
-        get_client().set(self.id, self.to_json())
+        client = pipe or get_client()
+        client.set(self.id, self.to_json())

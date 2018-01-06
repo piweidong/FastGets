@@ -8,7 +8,7 @@ import threading
 import socket
 import sys
 import traceback
-from .config import TEMPLATES_DIR
+from . import env
 
 
 def create_id():
@@ -64,10 +64,10 @@ def get_thread_name():
 
 
 def convert_path_to_name(path):
-    if TEMPLATES_DIR not in path:
+    if env.TEMPLATES_DIR not in path:
         return
 
-    file_name = path.split(TEMPLATES_DIR)[-1]
+    file_name = path.split(env.TEMPLATES_DIR)[-1]
     if file_name == '__init__.py':
         return
 
@@ -78,4 +78,4 @@ def convert_path_to_name(path):
 
 
 def convert_name_to_path(name):
-    return '{}{}.py'.format(TEMPLATES_DIR, name)
+    return '{}{}.py'.format(env.TEMPLATES_DIR, name)

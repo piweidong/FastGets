@@ -5,7 +5,7 @@ import subprocess
 import psutil
 from .core.errors import ApiError
 from .utils import utc2datetime
-from .config import TEMPLATES_DIR
+from . import env
 
 
 class Process(object):
@@ -55,7 +55,7 @@ class Process(object):
     def is_fastgets(cls, _process):
         try:
             cmdline = _process.cmdline()
-            if len(cmdline) >= 2 and _process.name() == 'Python' and TEMPLATES_DIR in cmdline[1]:
+            if len(cmdline) >= 2 and _process.name() == 'Python' and env.TEMPLATES_DIR in cmdline[1]:
                 return True
         except psutil.AccessDenied:
             pass
@@ -67,7 +67,7 @@ class Process(object):
         process = Process()
         process.id = str(_process.pid)
         process.path = _process.cmdline()[1]
-        process.name = process.path.split(TEMPLATES_DIR)[-1][:-len('.py')]
+        process.name = process.path.split(env.TEMPLATES_DIR)[-1][:-len('.py')]
         process.memory_percent = _process.memory_percent
         process.thread_num = _process.num_threads()
         process.create_at = utc2datetime(_process.create_time())

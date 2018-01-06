@@ -1,10 +1,8 @@
 # coding: utf8
-import sys
-import os
+
 import json
-import time
-import datetime
 from flask import Flask, request, jsonify
+from fastgets.core import config_parse
 
 
 def create_app():
@@ -52,7 +50,8 @@ def after_request(response):
 
 
 if __name__ == '__main__':
-    from fastgets.config import API_HOST, API_PORT
-    from fastgets.base import MODE
-    MODE.current = MODE.PRODUCTION
-    app.run(API_HOST, API_PORT, debug=True)
+    from fastgets import env
+    env.mode = env.API
+    config_parse()
+    app.run(env.API_CONFIG['host'], env.API_CONFIG['port'], debug=True)
+

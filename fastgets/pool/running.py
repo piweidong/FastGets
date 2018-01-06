@@ -38,7 +38,9 @@ class RunningPoolMonitor(object):
         now = time.time()
         old_add_time_dict = self.add_time_dict
         self.add_time_dict = {}
-        for task_id in set(old_add_time_dict.keys()) & set(RunningPool.get_task_ids()):
+
+        running_task_ids = RunningPool.get_task_ids(self.instance_id)
+        for task_id in set(old_add_time_dict.keys()) & set(running_task_ids):
             add_time = old_add_time_dict[task_id]
             if (now - add_time) > self.MAX_RUNNING_SECONDS:
                 # 超出最大运行时间，任务应该是没有正常结束
@@ -49,7 +51,7 @@ class RunningPoolMonitor(object):
             else:
                 self.add_time_dict[task_id] = add_time
 
-        for task_id in set(old_add_time_dict.keys()) - set(RunningPool.get_task_ids()):
+        for task_id in set(old_add_time_dict.keys()) - set(running_task_ids):
             self.add_time_dict[task_id] = now
 
     def is_ready_to_finish(self):
