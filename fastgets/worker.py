@@ -8,7 +8,7 @@ from fastgets.core import config_parse
 from fastgets.core.errors import CrawlError, ProcessError
 from fastgets.core.client import get_client
 from fastgets.core.log import logger
-from fastgets.pool import CrawlErrorPool, ProcessErrorPool, PendingPool
+from fastgets.pool import CrawlErrorPool, ProcessErrorPool, PendingPool, RunningPool
 from fastgets.stats import InstanceStats, ClusterStats
 from fastgets.utils import get_current_inner_ip, get_thread_name, format_exception
 
@@ -25,10 +25,16 @@ def finish(task):
     try:
         page_raw = task.crawl()
     except CrawlError as e:
-        task.crawl_error_traceback = e.traceback_string
+        task.crawl_error_traceback = e.traceback
         CrawlErrorPool.add(task)
-        ClusterStats.incr('crawl_error')
-        logger.error('[crawl][{}][{}][{}]'.format(task.func_name, task.url, e.traceback_string))
+
+        with get_client().pipeline() as pipe:
+            RunningPool.remove(task, pipe=pipe)
+            ClusterStats.incr('crawl_error', pipe=pipe)
+            InstanceStats.incr(task.instance_id, 'crawl_error', pipe=pipe)
+            pipe.execute()
+
+        logger.error('[crawl][{}][{}][{}]'.format(task.func_name, task.url, e.traceback))
         return False
     else:
         logger.info('[crawl][{}][{}][finish][seconds: {}]'.format(task.func_name, task.url, time.time() - start_time))
@@ -40,10 +46,16 @@ def finish(task):
         task.process(page_raw)
     except ProcessError as e:
         task.page_raw = page_raw
-        task.process_error_traceback = e.traceback_string
+        task.process_error_traceback = e.traceback
+
         ProcessErrorPool.add(task)
-        ClusterStats.incr('process_error')
-        logger.error('[process][{}][{}][{}]'.format(task.func_name, task.url), e.traceback_string)
+
+        with get_client().pipeline() as pipe:
+            RunningPool.remove(task, pipe=pipe)
+            ClusterStats.incr('process_error', pipe=pipe)
+            InstanceStats.incr(task.instance_id, 'process_error', pipe=pipe)
+            pipe.execute()
+        logger.error('[process][{}][{}][{}]'.format(task.func_name, task.url, e.traceback))
         return False
     else:
         logger.info('[process][{}][{}][finish][seconds: {}]'.format(
@@ -52,12 +64,14 @@ def finish(task):
 
     end_time = time.time()
 
-    crawl_seconds = mid_time - start_time
-    process_seconds = end_time - mid_time
+    task.crawl_seconds = mid_time - start_time
+    task.process_seconds = end_time - mid_time
 
     with get_client().pipeline() as pipe:
         ClusterStats.incr('success', pipe=pipe)
-        InstanceStats.add_time_cost(task, crawl_seconds, process_seconds, pipe=pipe)
+        InstanceStats.incr(task.instance_id, 'success', pipe=pipe)
+        InstanceStats.add_task_for_time_cost(task, pipe=pipe)
+        RunningPool.remove(task, pipe=pipe)
         pipe.execute()
 
 
@@ -67,7 +81,7 @@ def run():
     logger.info('worker start')
     while 1:
         try:
-            ClusterStats.add_worker('{}_{}'.format(inner_ip, get_thread_name()))
+            ClusterStats.add_thread('{}_{}'.format(inner_ip, get_thread_name()))
             ClusterStats.add_server(inner_ip)
 
             finish_num = 0
@@ -77,7 +91,8 @@ def run():
                     continue
 
                 if InstanceStats.check_rate_limit(instance_id, task.second_rate_limit):
-                    task.add(is_new=False)
+                    task.add(reason=task.REASON_RATE_LIMIT)
+                    RunningPool.remove(task)
                     continue
 
                 finish(task)
@@ -85,7 +100,7 @@ def run():
                 finish_num += 1
 
             if finish_num == 0:
-                logger.info('worker is sleeping...')
+                # logger.info('worker is sleeping...')
                 time.sleep(1)
         except Exception:
             UnknownErrorLog.add(format_exception())

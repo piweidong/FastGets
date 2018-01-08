@@ -1,13 +1,13 @@
 import datetime
 from mongoengine import *
-from ..utils import create_id, get_current_inner_ip
+from ..utils import create_id, get_current_inner_ip, time_readable
 
 
 class UnknownErrorLog(Document):
 
-    id = StringField()
+    id = StringField(primary_key=True)
     create_at = DateTimeField()
-    traceback_string = StringField()
+    traceback = ListField(StringField())
     inner_ip = StringField()
 
     meta = {
@@ -15,10 +15,19 @@ class UnknownErrorLog(Document):
     }
 
     @classmethod
-    def add(cls, traceback_string):
+    def add(cls, traceback):
         UnknownErrorLog.objects(id=create_id()).update(
             create_at=datetime.datetime.now(),
-            traceback_string=traceback_string,
+            traceback=traceback,
             inner_ip=get_current_inner_ip(),
-            upert=True,
+            upsert=True,
         )
+
+    def to_api_json(self):
+        return dict(
+            id=self.id,
+            create_at=time_readable(self.create_at),
+            traceback=self.traceback,
+            inner_ip=self.inner_ip
+        )
+

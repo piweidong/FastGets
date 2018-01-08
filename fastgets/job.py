@@ -50,7 +50,7 @@ class Job(object):
 
         job_id = str(int(time.time()))
         cron = get_cron()
-        each = cron.new(command='{} {} p'.format(sys.executable, template.path))
+        each = cron.new(command='{} {} -m d'.format(sys.executable, template.path))
         each.setall(trigger)
         each.set_comment(job_id)
         if each.is_valid():

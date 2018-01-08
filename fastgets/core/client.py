@@ -11,7 +11,7 @@ _client = None
 def get_client():
     global _client
     if not _client:
-        if env.mode == env.DISTRIBUTED:
+        if env.mode in [env.DISTRIBUTED, env.API]:
             _config = dict(env.REDIS_CONFIG)
             _config['decode_responses'] = True
             _client = redis.Redis(**_config)

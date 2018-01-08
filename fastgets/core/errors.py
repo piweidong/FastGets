@@ -12,14 +12,14 @@ class ApiError(HTTPException):
 
 class CrawlError(Exception):
 
-    def __init__(self, traceback_string):
-        self.traceback_string = traceback_string
+    def __init__(self, traceback):
+        self.traceback = traceback
 
 
 class ProcessError(Exception):
 
-    def __init__(self, traceback_string):
-        self.traceback_string = traceback_string
+    def __init__(self, traceback):
+        self.traceback = traceback
 
 
 class WriteError(Exception):

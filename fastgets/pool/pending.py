@@ -1,5 +1,6 @@
 # coding: utf8
 
+import datetime
 from .. import env
 from ..core.client import get_client
 from ..core.errors import FrameError
@@ -44,4 +45,8 @@ class PendingPool(object):
         if task_id:
             task = Task.get(task_id)
             assert task
+
+            task.start_at = datetime.datetime.now()
+            task.save()
+
             return task

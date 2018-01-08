@@ -17,11 +17,17 @@ class RunningPool(object):
         return get_client().lrange(cls.create_key(instance_id), 0, -1)
 
     @classmethod
-    def remove(cls, instance_id, task_id):
-        get_client().lrem(
-            cls.create_key(instance_id),
-            task_id,
-            num=1  # 不直接用默认值 1 可以提高一点性能
+    def get_tasks(cls, instance_id):
+        task_ids = cls.get_task_ids(instance_id)
+        return Task.gets(task_ids)
+
+    @classmethod
+    def remove(cls, task, pipe=None):
+        client = pipe or get_client()
+        client.lrem(
+            cls.create_key(task.instance_id),
+            task.id,
+            num=1  # 不直接用默认值 可以提高一点性能
         )
 
 
@@ -47,7 +53,7 @@ class RunningPoolMonitor(object):
                 task = Task.get(task_id)
                 if not task:
                     raise FrameError('task 不存在')
-                task.add(reason='missing')
+                task.add(reason=Task.REASON_LOST)
             else:
                 self.add_time_dict[task_id] = add_time
 

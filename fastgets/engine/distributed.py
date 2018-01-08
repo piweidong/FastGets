@@ -29,14 +29,20 @@ class DistributedEngine(Engine):
 
     def make_instance(self):
         from ..models.instance import Instance
+
+        now = datetime.datetime.now()
+
         instance = Instance()
         instance.id = create_id()
         instance.process_id = str(os.getpid())
         instance.name = self.template_class.__name__
         instance.description = (self.template_class.__doc__ or '').strip()
-        instance.start_at = datetime.datetime.now()
-        instance.update_at = datetime.datetime.now()
+        instance.start_at = now
+        instance.update_at = now
+        instance.task_active_at = now
         instance.save()
+
+        InstanceStats.set_task_active(instance.id)  # 初始化，避免其他逻辑拿到空值
 
         return instance
 
@@ -48,7 +54,7 @@ class DistributedEngine(Engine):
     def update_instance_from_redis(self):
         from ..models.instance import Instance
 
-        task_ative_at, total_num, success_num, crawl_error_num, process_error_num, \
+        task_ative_at, total_num, running_num, success_num, crawl_error_num, process_error_num, \
             avg_crawl_seconds, avg_process_seconds = InstanceStats.get(self.instance.id)
 
         pending_num = PendingPool.get_current_task_num(self.instance.id)
@@ -57,7 +63,8 @@ class DistributedEngine(Engine):
             set__task_active_at=task_ative_at,
             set__total_task_num=total_num,
             set__pending_task_num=pending_num,
-            set__success_task_num=total_num,
+            set__running_task_num=running_num,
+            set__success_task_num=success_num,
             set__crawl_error_task_num=crawl_error_num,
             set__process_error_task_num=process_error_num,
             set__avg_crawl_seconds=avg_crawl_seconds,
@@ -106,12 +113,21 @@ class DistributedEngine(Engine):
     def is_running(self):
         return self.running_pool_monitor_thread.is_alive() or \
                self.instance_update_thread.is_alive() or \
-               (self.instance.is_running() and self.seed_task_load_thread.is_alive())
+               (self.instance.is_running() and not self.seed_task_load_thread.is_alive())
 
     def run(self):
+        from ..models.instance import Instance
+
         self.start_running_pool_monitor_thread()
         self.start_instance_update_thread()
         self.start_seed_task_load_thread()
 
-        while self.is_running():
-            time.sleep(1)
+        while 1:
+            if self.running_pool_monitor_thread.is_alive() or self.instance_update_thread.is_alive():
+                time.sleep(1)
+                continue
+            else:
+                break
+
+        if not self.instance.stop_at:
+            self.instance.finish()

@@ -1,6 +1,7 @@
 # coding: utf8
 
 import os
+import sys
 import subprocess
 import psutil
 from .core.errors import ApiError
@@ -44,18 +45,21 @@ class Process(object):
         if not template:
             raise ApiError('模板名不存在')
 
-        cmdline = ['python3', template.path, 'p']
+        cmdline = [sys.executable, template.path, '-m d']
+
+        print(cmdline)
+
         dev_null = open(os.devnull, 'wb')
-        subprocess.Popen(
+        print(subprocess.Popen(
             cmdline,
             stdout=dev_null, stderr=dev_null, stdin=dev_null, close_fds=True
-        )
+        ))
 
     @classmethod
     def is_fastgets(cls, _process):
         try:
             cmdline = _process.cmdline()
-            if len(cmdline) >= 2 and _process.name() == 'Python' and env.TEMPLATES_DIR in cmdline[1]:
+            if len(cmdline) >= 2 and _process.name() == sys.executable and env.TEMPLATES_DIR in cmdline[1]:
                 return True
         except psutil.AccessDenied:
             pass
