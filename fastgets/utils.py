@@ -8,7 +8,7 @@ import threading
 import socket
 import sys
 import traceback
-from .config import TEMPLATES_DIR
+from . import env
 
 
 def create_id():
@@ -18,8 +18,20 @@ def create_id():
 def to_hash(*args):
     m = hashlib.md5()
     for arg in args:
-        m.update(str(arg))
+        m.update(str(arg).encode('utf8'))
     return m.hexdigest()
+
+
+def time_readable(dt):
+    if not dt:
+        return
+    now = datetime.datetime.now()
+    if dt.year != now.year:
+        return dt.strftime('%Y-%m-%d %H:%M:%S')
+    if dt.month != now.month and dt.day != now.day:
+        return dt.strftime('%m-%d %H:%M:%S')
+
+    return dt.strftime('%H:%M:%S')
 
 
 def datetime2utc(dt):
@@ -40,12 +52,8 @@ def format_exception():
         )
     )
 
-    exception_str = "Traceback (most recent  call last):\n"
-    exception_str += "".join(exception_list)
-    # Removing the last \n
-    exception_str = exception_str[:-1]
-
-    return exception_str[-1000:]
+    exception_list.insert(0, 'Traceback (most recent  call last):')
+    return exception_list
 
 
 def get_current_inner_ip():
@@ -64,10 +72,10 @@ def get_thread_name():
 
 
 def convert_path_to_name(path):
-    if TEMPLATES_DIR not in path:
+    if env.TEMPLATES_DIR not in path:
         return
 
-    file_name = path.split(TEMPLATES_DIR)[-1]
+    file_name = path.split(env.TEMPLATES_DIR)[-1]
     if file_name == '__init__.py':
         return
 
@@ -78,4 +86,4 @@ def convert_path_to_name(path):
 
 
 def convert_name_to_path(name):
-    return '{}{}.py'.format(TEMPLATES_DIR, name)
+    return '{}{}.py'.format(env.TEMPLATES_DIR, name)

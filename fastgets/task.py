@@ -6,10 +6,11 @@ from werkzeug.utils import import_string
 from mongoengine import *
 
 from . import env
+from .core.log import logger
 from .core.errors import CrawlError, ProcessError, FrameError
 from .core.client import get_client
-from .config import ROOT_DIR
-from .utils import format_exception, create_id
+from .utils import format_exception, create_id, time_readable
+from .stats import InstanceStats
 
 
 class Task(Document):
@@ -51,10 +52,12 @@ class Task(Document):
     # 执行过程
     start_at = DateTimeField()
     end_at = DateTimeField()
+    crawl_seconds = FloatField()
+    process_seconds = FloatField()
 
     # 错误参数
-    crawl_error_traceback = StringField()
-    process_error_traceback = StringField()
+    crawl_error_traceback = ListField(StringField())
+    process_error_traceback = ListField(StringField())
     page_raw = StringField()
 
     # 其它
@@ -76,9 +79,9 @@ class Task(Document):
 
         module = template_class.__module__
         if env.mode == env.DISTRIBUTED and env.is_loading_seed_tasks:
-            path = sys.argv[0][:-3]
-            if ROOT_DIR in path:
-                path = path.split(ROOT_DIR)[1]
+            path = sys.argv[0][:-3]  # 去除 .py 后缀
+            if env.PROJECT_ROOT_DIR in path:
+                path = path.split(env.PROJECT_ROOT_DIR)[1]
             module = path.replace('/', '.')
 
         self.template_class_path = '{}:{}'.format(module, template_class.__name__)
@@ -135,53 +138,75 @@ class Task(Document):
                 self.add(reason=self.REASON_RETYR)
 
             self.current_retry_num -= 1  # 还原初始值
-            traceback_string = format_exception()
-            raise CrawlError(traceback_string)
+            raise CrawlError(format_exception())
 
     def process(self, page_raw):
         try:
             self.func(self, page_raw)
         except Exception:
-            traceback_string = format_exception()
-            raise ProcessError(traceback_string)
+            raise ProcessError(format_exception())
 
     def _add_seed_task(self):
         from .pool import PendingPool
 
         assert not self.instance_id and env.instance_id
         self.instance_id = env.instance_id
+        self.create_id()
         self.second_rate_limit = self.template_class.config.get('second_rate_limit', 30)
 
         while 1:
             if PendingPool.get_current_task_num(self.instance_id) >= \
                     self.template_class.config.get('max_pending_task_num', 1000):
+                logger.debug('pending pool is full !')
                 time.sleep(1)
             else:
                 PendingPool.add(self)
+                InstanceStats.incr(self.instance_id, 'total')
                 break
 
     def _add_new_task(self):
-        pass
+        from .pool import PendingPool
+
+        assert self.instance_id
+        self.create_id()
+        PendingPool.add(self)
+        InstanceStats.incr(self.instance_id, 'total')
+
+    def _add_rate_limit_task(self):
+        from .pool import PendingPool
+
+        assert self.instance_id
+        PendingPool.add(self)
 
     def _add_retry_task(self):
-        pass
+        from .pool import PendingPool
+
+        assert self.instance_id
+        PendingPool.add(self)
 
     def _add_lost_task(self):
-        pass
+        from .pool import PendingPool
+
+        assert self.instance_id
+        PendingPool.add(self)
 
     def _add_manul_retry_task(self):
         # 在 api 中调用
-        pass
+        from .pool import PendingPool
+
+        assert self.instance_id
+        PendingPool.add(self)
 
     def _add_local_task(self):
         from .pool import PendingPool
 
         self.instance_id = env.instance_id
-        self.id = '{}_{}'.format(create_id(), self.instance_id)
+        self.create_id()
         self.second_rate_limit = self.template_class.config.get('second_rate_limit', 10)
         PendingPool.add(self)
 
     def add(self, reason=None):
+
         if env.mode == env.DISTRIBUTED:
             if env.is_loading_seed_tasks:
                 # template
@@ -197,7 +222,11 @@ class Task(Document):
                 if reason is None:
                     self.add_reason = self.REASON_NEW
                     self._add_new_task()
+                elif reason == self.REASON_RATE_LIMIT:
+                    self.add_reason = self.REASON_RATE_LIMIT
+                    self._add_rate_limit_task()
                 elif reason == self.REASON_RETYR:
+                    self.add_reason = self.REASON_RATE_LIMIT
                     self._add_retry_task()
                 else:
                     raise FrameError('unknown reason')
@@ -210,7 +239,12 @@ class Task(Document):
         elif env.mode in [env.LOCAL, env.TEST]:
             self._add_local_task()
         else:
-            raise FrameError('未知 mode')
+            raise FrameError('unknown mode')
+
+    def create_id(self):
+        assert not self.id
+        assert self.instance_id
+        self.id = '{}_{}'.format(self.instance_id, create_id())
 
     @classmethod
     def get(cls, id):
@@ -219,6 +253,32 @@ class Task(Document):
         if task_json:
             return cls.from_json(task_json)
 
-    def save(self):
+    @classmethod
+    def gets(cls, ids):
+        if not ids:
+            return []
+
+        task_json_list = filter(None, get_client().mget(ids))
+        return [
+            Task.from_json(task_json)
+            for task_json in task_json_list
+        ]
+
+    def save(self, pipe=None):
         assert self.id
-        get_client().set(self.id, self.to_json())
+        client = pipe or get_client()
+        client.set(self.id, self.to_json())
+
+    def to_api_json(self):
+        return dict(
+            id=self.id,
+            func_name=self.func_name,
+            url=self.url,
+            method=self.method,
+            get_payload=self.get_payload,
+            post_payload=self.post_payload,
+            temp_data=self.temp_data,
+            crawl_seconds=self.crawl_seconds and round(self.crawl_seconds, 2) or None,
+            process_seconds=self.process_seconds and round(self.process_seconds, 2) or None,
+            error_traceback=self.crawl_error_traceback or self.process_error_traceback,
+        )

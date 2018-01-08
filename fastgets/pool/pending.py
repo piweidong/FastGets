@@ -1,8 +1,10 @@
 # coding: utf8
 
+import datetime
 from .. import env
 from ..core.client import get_client
 from ..core.errors import FrameError
+from ..core.log import logger
 from ..task import Task
 from .running import RunningPool
 
@@ -43,4 +45,8 @@ class PendingPool(object):
         if task_id:
             task = Task.get(task_id)
             assert task
+
+            task.start_at = datetime.datetime.now()
+            task.save()
+
             return task

@@ -3,7 +3,7 @@
 import os
 import importlib.util
 
-from ..config import TEMPLATES_DIR
+from .. import env
 from ..utils import convert_path_to_name
 from . import TemplateBase
 
@@ -38,9 +38,10 @@ class Template(object):
     @classmethod
     def get_list(cls):
         templates = []
-        for _, _, file_names in os.walk(TEMPLATES_DIR):
+        print(env.TEMPLATES_DIR)
+        for _, _, file_names in os.walk(env.TEMPLATES_DIR):
             for file_name in file_names:
-                path = TEMPLATES_DIR + file_name
+                path = env.TEMPLATES_DIR + file_name
                 if file_name != '__init__.py' and file_name.endswith('.py'):
                     name = convert_path_to_name(path)
                     cls_ = cls._find_cls(name, path)

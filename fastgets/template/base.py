@@ -1,9 +1,9 @@
 # coding: utf8
 
-import sys
-
 from .. import env
+from ..core.log import logger
 from ..core.errors import FrameError
+from ..core import mode_parse
 
 
 class TemplateBase(object):
@@ -35,24 +35,20 @@ class TemplateBase(object):
 
     @classmethod
     def run(cls):
+        mode_parse()
+
         from ..engine import DistributedEngine, LocalEngine
 
         cls.check_config()
 
-        if len(sys.argv) >= 2:
-            mode = sys.argv[1]
-        else:
-            mode = 'l'
-
-        if mode == 't':
-            env.mode = env.TEST
+        if env.mode == env.TEST:
             engine = LocalEngine(cls, is_testing=True)
-        elif mode == 'l':
-            env.mode = env.LOCAL
+        elif env.mode == env.LOCAL:
             engine = LocalEngine(cls)
-        elif mode == 'p':
-            env.mode = env.DISTRIBUTED
-            env.is_loading_tasks = True
+        elif env.mode == env.DISTRIBUTED:
+            if not env.configured:
+                raise ValueError('must call fastgets.init_fastgets_env to init env')
+            env.is_loading_seed_tasks = True
             engine = DistributedEngine(cls)
         else:
             raise FrameError('unknown mode')

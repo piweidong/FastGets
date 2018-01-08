@@ -6,8 +6,8 @@ from .time_counter import MinuteCounter, SecondCounter, DayCounter
 class ClusterStats(object):
 
     @classmethod
-    def add_worker(cls, worker_id, pipe=None):
-        MinuteCounter.incr('worker', worker_id, pipe=pipe)
+    def add_thread(cls, thread_id, pipe=None):
+        MinuteCounter.incr('thread', thread_id, pipe=pipe)
 
     @classmethod
     def add_server(cls, server_ip, pipe=None):
@@ -33,7 +33,8 @@ class ClusterStats(object):
 
     @classmethod
     def get_today_error_num(cls):
-        return DayCounter.get_count('cluster', field='process_error')
+        return DayCounter.get_count('cluster', field='crawl_error') + \
+               DayCounter.get_count('cluster', field='process_error')
 
     @classmethod
     def get_recent_stats(cls, num=60):

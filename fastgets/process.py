@@ -1,11 +1,12 @@
 # coding: utf8
 
 import os
+import sys
 import subprocess
 import psutil
 from .core.errors import ApiError
 from .utils import utc2datetime
-from .config import TEMPLATES_DIR
+from . import env
 
 
 class Process(object):
@@ -44,18 +45,21 @@ class Process(object):
         if not template:
             raise ApiError('模板名不存在')
 
-        cmdline = ['python3', template.path, 'p']
+        cmdline = [sys.executable, template.path, '-m d']
+
+        print(cmdline)
+
         dev_null = open(os.devnull, 'wb')
-        subprocess.Popen(
+        print(subprocess.Popen(
             cmdline,
             stdout=dev_null, stderr=dev_null, stdin=dev_null, close_fds=True
-        )
+        ))
 
     @classmethod
     def is_fastgets(cls, _process):
         try:
             cmdline = _process.cmdline()
-            if len(cmdline) >= 2 and _process.name() == 'Python' and TEMPLATES_DIR in cmdline[1]:
+            if len(cmdline) >= 2 and _process.name() == sys.executable and env.TEMPLATES_DIR in cmdline[1]:
                 return True
         except psutil.AccessDenied:
             pass
@@ -67,7 +71,7 @@ class Process(object):
         process = Process()
         process.id = str(_process.pid)
         process.path = _process.cmdline()[1]
-        process.name = process.path.split(TEMPLATES_DIR)[-1][:-len('.py')]
+        process.name = process.path.split(env.TEMPLATES_DIR)[-1][:-len('.py')]
         process.memory_percent = _process.memory_percent
         process.thread_num = _process.num_threads()
         process.create_at = utc2datetime(_process.create_time())

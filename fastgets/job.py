@@ -1,15 +1,15 @@
 # coding: utf8
 
+import sys
 import time
 from crontab import CronTab
 
-from .errors import ApiError
-from .config import PYTHON, CRON_USER
+from .core.errors import ApiError
 from .utils import convert_path_to_name
 
 
 def get_cron():
-    return CronTab(user=CRON_USER)
+    return CronTab()
 
 
 class Job(object):
@@ -50,7 +50,7 @@ class Job(object):
 
         job_id = str(int(time.time()))
         cron = get_cron()
-        each = cron.new(command='{} {} p'.format(PYTHON or 'python', template.path))
+        each = cron.new(command='{} {} -m d'.format(sys.executable, template.path))
         each.setall(trigger)
         each.set_comment(job_id)
         if each.is_valid():
