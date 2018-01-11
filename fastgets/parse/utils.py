@@ -5,7 +5,7 @@ import lxml.html
 from ..core.errors import ParseError
 
 
-INT_PATTERN = re.compile('[0-9]]+')
+INT_PATTERN = re.compile('[0-9]+')
 FLOAT_PATTERN = re.compile('[0-9\.]+')
 
 
