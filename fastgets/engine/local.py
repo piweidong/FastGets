@@ -11,7 +11,7 @@ from ..core.log import logger
 from ..pool import PendingPool
 from ..stats import InstanceStats
 from ..utils import create_id, format_exception
-from ..worker import finish
+# from ..worker import finish
 from ..writer import current_writers
 
 
@@ -88,12 +88,11 @@ class LocalEngine(object):
                     self.instance.stop_at = datetime.datetime.now()
                     raise e
 
-        work_thread_list = []
         for i in range(self.thread_num):
             # self.running_status_list[i] = True
             work_thread = threading.Thread(target=_, args=(i, ), daemon=True)
             work_thread.start()
-            work_thread_list.append(work_thread)
+            self.work_thread_list.append(work_thread)
 
     def is_running(self):
         if self.instance.stop_at:
@@ -107,6 +106,7 @@ class LocalEngine(object):
 
     def run(self):
         self.start_seed_task_load_thread()
+        time.sleep(1)  # 保证种子任务先加入队列 再启动work线程
         self.start_work_thread_list()
 
         while self.is_running():
