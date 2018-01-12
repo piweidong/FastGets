@@ -57,7 +57,7 @@ class RunningPoolMonitor(object):
             else:
                 self.add_time_dict[task_id] = add_time
 
-        for task_id in set(old_add_time_dict.keys()) - set(running_task_ids):
+        for task_id in set(running_task_ids) - set(old_add_time_dict.keys()):
             self.add_time_dict[task_id] = now
 
     def is_ready_to_finish(self):
