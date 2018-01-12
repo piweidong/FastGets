@@ -111,6 +111,7 @@ def main():
     env.mode = env.DISTRIBUTED
     config_parse()
     for i in range(10):
+        time.sleep(0.1)
         t = threading.Thread(target=run)
         t.start()
 
