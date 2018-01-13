@@ -32,6 +32,8 @@ class Template(object):
 
         for attr in dir(mod):
             template = getattr(mod, attr)
+            if not hasattr(template, '__bases__'):
+                continue
             if TemplateBase in template.__bases__:
                 return template
 

@@ -4,4 +4,7 @@ clear_pyc:
 test: clear_pyc
 	env unittest=true py.test ./fastgets --doctest-modules
 
+pub: 
+	python3 setup.py sdist upload
+
 
