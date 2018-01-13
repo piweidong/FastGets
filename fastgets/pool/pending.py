@@ -31,7 +31,7 @@ class PendingPool(object):
 
     @classmethod
     def fetch(cls, instance_id):
-        if env.mode == env.DISTRIBUTED:
+        if env.mode == env.WORK:
             task_id = get_client().rpoplpush(
                 cls.create_key(instance_id),
                 RunningPool.create_key(instance_id)
@@ -39,10 +39,11 @@ class PendingPool(object):
         else:
             task_id = get_client().rpop(cls.create_key(instance_id))
 
-        if task_id and env.mode != env.DISTRIBUTED:
-            task_id = task_id.decode('utf8')
-
         if task_id:
+            if isinstance(task_id, bytes):
+                # mock redis 无法保证返回 str
+                task_id = task_id.decode('utf8')
+
             task = Task.get(task_id)
             assert task
 

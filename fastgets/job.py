@@ -2,6 +2,7 @@
 
 import sys
 import time
+import getpass
 from crontab import CronTab
 
 from .core.errors import ApiError
@@ -9,7 +10,7 @@ from .utils import convert_path_to_name
 
 
 def get_cron():
-    return CronTab()
+    return CronTab(user=getpass.getuser())
 
 
 class Job(object):
@@ -29,28 +30,38 @@ class Job(object):
         )
 
     @classmethod
-    def get(cls, id):
-        for job in cls.get_list():
+    def get(cls, id, type):
+        for job in cls.get_list(type):
             if job.id == id:
                 return job
 
     @classmethod
-    def get_by_name(cls, name):
-        return cls.get_dict().get(name)
+    def get_by_name(cls, name, type):
+        return cls.get_dict(type).get(name)
 
     @classmethod
-    def add(cls, name, trigger):
-        from fastgets.template import Template
-        template = Template.get_dict().get(name)
-        if not template:
-            raise ApiError('名称不存在')
+    def add(cls, name, trigger, type):
+        from .template import Template
+        from .script import Script
 
         if not trigger or trigger == '* * * * *':
             raise ApiError('trigger 非法')
 
         job_id = str(int(time.time()))
         cron = get_cron()
-        each = cron.new(command='{} {} -m d'.format(sys.executable, template.path))
+
+        if type == 'template':
+            template = Template.get_dict().get(name)
+            if not template:
+                raise ApiError('template:{} not found'.format(name))
+            each = cron.new(command='{} {} -m d'.format(sys.executable, template.path))
+        else:
+            script = Script.get_dict().get(name)
+            if not script:
+                raise ApiError('script:{} not found'.format(name))
+            each = cron.new(command='{} {}'.format(sys.executable, script.path))
+
+        print(each.command)
         each.setall(trigger)
         each.set_comment(job_id)
         if each.is_valid():
@@ -67,25 +78,30 @@ class Job(object):
             cron.write()
 
     @classmethod
-    def get_list(cls):
+    def get_list(cls, type):
+        from . import env
+
         jobs = []
         for each in get_cron():
             splits = each.command.split()
-            if len(splits) >= 2:
+            if len(splits) < 2:
                 continue
-            path = splits[1]
-            job = Job()
-            job.id = each.comment
-            job.name = convert_path_to_name(path)
-            job.trigger = each.slices
-            job.next_run_at = each.schedule().get_next()
-            jobs.append(job)
+            python, path = splits[:2]
+            if python != sys.executable:
+                continue
+            if (type == 'template' and env.TEMPLATES_DIR in path) or (type == 'script' and env.SCRIPTS_DIR in path):
+                job = Job()
+                job.id = each.comment
+                job.name = convert_path_to_name(path, type)
+                job.trigger = each.slices
+                job.next_run_at = each.schedule().get_next()
+                jobs.append(job)
 
         return jobs
 
     @classmethod
-    def get_dict(cls):
+    def get_dict(cls, type):
         return {
             job.name: job
-            for job in cls.get_list()
+            for job in cls.get_list(type)
         }

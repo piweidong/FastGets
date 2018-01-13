@@ -3,7 +3,7 @@ from mongoengine import *
 from ..utils import create_id, get_current_inner_ip, time_readable
 
 
-class UnknownErrorLog(Document):
+class UnknownError(Document):
 
     id = StringField(primary_key=True)
     create_at = DateTimeField()
@@ -11,12 +11,12 @@ class UnknownErrorLog(Document):
     inner_ip = StringField()
 
     meta = {
-        'collection': 'fastgets_unknown_error_log'
+        'collection': 'fastgets_unknown_error'
     }
 
     @classmethod
     def add(cls, traceback):
-        UnknownErrorLog.objects(id=create_id()).update(
+        cls.objects(id=create_id()).update(
             create_at=datetime.datetime.now(),
             traceback=traceback,
             inner_ip=get_current_inner_ip(),

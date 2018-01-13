@@ -1,5 +1,7 @@
 # coding: utf8
 
+import datetime
+from mongoengine import Q
 from flask import Blueprint, jsonify, request
 
 from fastgets.models.instance import Instance
@@ -73,16 +75,24 @@ def instance_tasks_view():
 def instance_list_view():
     process_dict = {
         id: process.to_api_json()
-        for id, process in Process.get_dict().items()
+        for id, process in Process.get_dict('template').items()
     }
 
-    instances = Instance.objects.order_by('-start_at').skip(request.start).limit(request.limit)
-    instances = [
-        instance.to_api_json(process=process_dict.get(instance.process_id))
-        for instance in instances
-    ]
+    def _(q):
+        instances = Instance.objects(q).order_by('-update_at').skip(request.start).limit(request.limit)
+        instances = [
+            instance.to_api_json(process=process_dict.get(instance.process_id))
+            for instance in instances
+        ]
+        return instances
 
-    return jsonify(dict(instances=instances))
+    return jsonify(dict(
+        instances=_(Q()),
+        running_instances=_(Q(update_at__gte=datetime.datetime.now()-datetime.timedelta(seconds=5), stop_at__exists=False, finish_at__exists=False)),
+        error_instances=_(Q(update_at__lt=datetime.datetime.now()-datetime.timedelta(seconds=5), stop_at__exists=False, finish_at__exists=False)),
+        stopped_instances=_(Q(stop_at__exists=True)),
+        finished_instances=_(Q(finish_at__exists=True)),
+    ))
 
 
 @instance_blueprint.route('/stop')

@@ -18,7 +18,13 @@ def create_id():
 def to_hash(*args):
     m = hashlib.md5()
     for arg in args:
-        m.update(str(arg).encode('utf8'))
+        if isinstance(arg, bytes):
+            pass
+        elif isinstance(arg, str):
+            arg = arg.encode('utf8')
+        else:
+            arg = str(arg)
+        m.update(arg.encode('utf8'))
     return m.hexdigest()
 
 
@@ -71,11 +77,18 @@ def get_thread_name():
     return threading.current_thread().name
 
 
-def convert_path_to_name(path):
-    if env.TEMPLATES_DIR not in path:
+def convert_path_to_name(path, type):
+    if type == 'template':
+        dir_path = env.TEMPLATES_DIR
+    elif type == 'script':
+        dir_path = env.TEMPLATES_DIR
+    else:
+        raise
+
+    if dir_path not in path:
         return
 
-    file_name = path.split(env.TEMPLATES_DIR)[-1]
+    file_name = path.split(dir_path)[-1]
     if file_name == '__init__.py':
         return
 
@@ -85,5 +98,12 @@ def convert_path_to_name(path):
     return file_name[:-len('.py')]
 
 
-def convert_name_to_path(name):
-    return '{}{}.py'.format(env.TEMPLATES_DIR, name)
+def convert_name_to_path(name, type):
+    if type == 'template':
+        dir_path = env.TEMPLATES_DIR
+    elif type == 'script':
+        dir_path = env.TEMPLATES_DIR
+    else:
+        raise
+
+    return '{}{}.py'.format(dir_path, name)

@@ -6,6 +6,7 @@ from mongoengine import *
 from ..utils import datetime2utc
 from ..core.decorators import sync
 
+
 _cached_instance_ids = []
 _cached_at = None
 
@@ -40,14 +41,14 @@ class Instance(Document):
 
     @property
     def status(self):
-        if self.finish_at:
-            return '已完成'
-        elif self.stop_at:
-            return '已停止'
-        elif (datetime.datetime.now()-self.update_at).seconds < 5:
-            return '正在运行'
+        if self.stop_at:
+            return '手动停止'
+        elif self.finish_at:
+            return '正常完成'
+        elif (datetime.datetime.now()-self.update_at).seconds > 5:
+            return '异常停止'
         else:
-            return '异常'
+            return '正在运行'
 
     def is_running(self):
         if self.stop_at or self.finish_at:

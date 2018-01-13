@@ -16,5 +16,7 @@ process_blueprint = Blueprint('process', __name__, url_prefix='/process')
 @process_blueprint.route('/add')
 def process_add_view():
     name = request.args.get('name')
-    Process.add(name)
+    type = request.args.get('type')
+
+    Process.add(name, type)
     return jsonify()

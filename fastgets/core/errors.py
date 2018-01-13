@@ -36,3 +36,11 @@ class ParseError(Exception):
 
 class FrameError(Exception):
     pass
+
+
+class NoCookiesError(Exception):
+    pass
+
+
+class NoProxyError(Exception):
+    pass

@@ -35,36 +35,52 @@ class Process(object):
         )
 
     @classmethod
-    def add(cls, name):
+    def add(cls, name, type):
         from fastgets.template import Template
+        from fastgets.script import Script
 
-        if name in cls.get_dict():
+        if name in cls.get_dict(type):
             raise ApiError('不能重复启动')
 
-        template = Template.get_dict().get(name)
-        if not template:
-            raise ApiError('模板名不存在')
+        if type == 'template':
+            template = Template.get_dict().get(name)
+            if not template:
+                raise ApiError('模板不存在')
 
-        cmdline = [sys.executable, template.path, '-m d']
+            cmdline = [sys.executable, template.path, '-m', 'd']
 
-        print(cmdline)
+        elif type == 'script':
+            script = Script.get_dict().get(name)
+            if not script:
+                raise ApiError('脚本不存在')
+
+            cmdline = [sys.executable, script.path]
+
+        else:
+            raise ApiError('type is error')
 
         dev_null = open(os.devnull, 'wb')
-        print(subprocess.Popen(
+
+        subprocess.Popen(
             cmdline,
             stdout=dev_null, stderr=dev_null, stdin=dev_null, close_fds=True
-        ))
+        )
 
     @classmethod
-    def is_fastgets(cls, _process):
+    def get_type(cls, _process):
         try:
             cmdline = _process.cmdline()
-            if len(cmdline) >= 2 and _process.name() == sys.executable and env.TEMPLATES_DIR in cmdline[1]:
-                return True
+            # print(cmdline)
+            if len(cmdline) >= 2 :
+                # and _process.name() == sys.executable
+                if env.TEMPLATES_DIR in cmdline[1]:
+                    return 'template'
+                if env.SCRIPTS_DIR in cmdline[1]:
+                    return 'script'
         except psutil.AccessDenied:
             pass
-
-        return False
+        except psutil.ZombieProcess:
+            pass
 
     @classmethod
     def _get(cls, _process):
@@ -84,18 +100,18 @@ class Process(object):
         return cls._get(_process)
 
     @classmethod
-    def get_list(cls):
+    def get_list(cls, type):
         process_list = []
         for pid in psutil.pids():
             _process = psutil.Process(pid)
-            if cls.is_fastgets(_process):
+            if cls.get_type(_process) == type:
                 process_list.append(cls._get(_process))
 
         return process_list
 
     @classmethod
-    def get_dict(cls):
+    def get_dict(cls, type):
         return {
             process.id: process
-            for process in cls.get_list()
+            for process in cls.get_list(type)
         }

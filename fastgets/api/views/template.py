@@ -20,11 +20,11 @@ def template_list_view():
 
     job_dict = {
         name: job.to_api_json()
-        for name, job in Job.get_dict().items()
+        for name, job in Job.get_dict('template').items()
     }
     process_dict = {
         name: process.to_api_json()
-        for name, process in Process.get_dict().items()
+        for name, process in Process.get_dict('template').items()
     }
 
     templates = [

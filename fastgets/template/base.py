@@ -48,7 +48,6 @@ class TemplateBase(object):
         elif env.mode == env.DISTRIBUTED:
             if not env.configured:
                 raise ValueError('must call fastgets.init_fastgets_env to init env')
-            env.is_loading_seed_tasks = True
             engine = DistributedEngine(cls)
         else:
             raise FrameError('unknown mode')

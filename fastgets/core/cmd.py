@@ -11,6 +11,7 @@ def init_fastgets_env(config):
     env.API_CONFIG = config.API_CONFIG
     env.PROJECT_ROOT_DIR = config.PROJECT_ROOT_DIR
     env.TEMPLATES_DIR = config.TEMPLATES_DIR
+    env.SCRIPTS_DIR = config.SCRIPTS_DIR
     env.configured = True
 
 

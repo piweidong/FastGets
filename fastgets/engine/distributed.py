@@ -34,6 +34,7 @@ class DistributedEngine(Engine):
 
         instance = Instance()
         instance.id = create_id()
+
         instance.process_id = str(os.getpid())
         instance.name = self.template_class.__name__
         instance.description = (self.template_class.__doc__ or '').strip()

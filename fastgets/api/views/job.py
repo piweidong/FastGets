@@ -17,20 +17,24 @@ job_blueprint = Blueprint('job', __name__, url_prefix='/job')
 def job_add_view():
     name = request.args.get('name')
     trigger = request.args.get('trigger')
+    type = request.args.get('type')
+    if type not in ['template', 'script']:
+        raise ApiError('type is error')
 
-    job = Job.get_by_name(name)
+    job = Job.get_by_name(name, type)
     if job:
-        # update
         job.delete()
 
-    Job.add(name, trigger)
+    Job.add(name, trigger, type)
     return jsonify()
 
 
 @job_blueprint.route('/delete')
 def job_delete_view():
     id = request.args.get('id')
-    job = Job.get(id)
+    type = request.args.get('type')
+
+    job = Job.get(id, type)
     if not job:
         raise ApiError('ID 不存在')
 

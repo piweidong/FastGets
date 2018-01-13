@@ -1,7 +1,9 @@
 # coding: utf8
 import time
 import sys
+import json
 import requests
+import tldextract
 from werkzeug.utils import import_string
 from mongoengine import *
 
@@ -9,8 +11,9 @@ from . import env
 from .core.log import logger
 from .core.errors import CrawlError, ProcessError, FrameError
 from .core.client import get_client
-from .utils import format_exception, create_id, time_readable
+from .utils import format_exception, create_id, time_readable, to_hash
 from .stats import InstanceStats
+from .headers import cookie_helper, user_agent_helper
 
 
 class Task(Document):
@@ -36,12 +39,15 @@ class Task(Document):
     method = StringField(default='GET')
     get_payload = DictField()
     post_payload = DictField()
-    encoding = StringField()
-    timeout = IntField(default=5)
-    current_retry_num = IntField(default=0)
+    use_cookie = BooleanField(default=False)
+    proxies = DictField()
+
+    timeout = FloatField(default=5)
+    current_retry_num = IntField(default=1)
     max_retry_num = IntField(default=3)
 
     # 处理相关
+    encoding = StringField()
     template_class_path = StringField()
     func_name = StringField()
     temp_data = DictField()
@@ -64,6 +70,15 @@ class Task(Document):
     add_reason = StringField()
 
     @property
+    def unique_id(self):
+        # func_name 不需要
+        return to_hash(
+            self.url, json.dumps(self.method),
+            json.dumps(dict(self.get_payload)), json.dumps(dict(self.post_payload)),
+            self.add_reason, self.current_retry_num,
+        )
+
+    @property
     def template_class(self):
         return import_string(self.template_class_path)
 
@@ -78,7 +93,8 @@ class Task(Document):
         template_class = func.__self__
 
         module = template_class.__module__
-        if env.mode == env.DISTRIBUTED and env.is_loading_seed_tasks:
+        if env.mode == env.DISTRIBUTED:
+            # 转换 __main__ 为真实的模块路径
             path = sys.argv[0][:-3]  # 去除 .py 后缀
             if env.PROJECT_ROOT_DIR in path:
                 path = path.split(env.PROJECT_ROOT_DIR)[1]
@@ -91,7 +107,7 @@ class Task(Document):
         del task.id
         del task.add_reason
 
-        if env.mode == env.DISTRIBUTED and env.is_loading_seed_tasks:
+        if env.mode == env.DISTRIBUTED:
             # 分布式模式下 加载种子任务时需要确保 instance_id 为空
             del task.instance_id
 
@@ -99,9 +115,20 @@ class Task(Document):
 
     def _prepare_kwds(self):
         kwds = {
-            'timeout': self.timeout,
-            'headers': self.headers,
+            'timeout': self.timeout or 5,
+            'headers': {'User-Agent': user_agent_helper.random_choice()}
         }
+
+        kwds['headers'].update(self.headers)
+
+        if self.use_cookie:
+            domain = tldextract.extract(self.url).domain
+            cookies = cookie_helper.random_choice(domain)
+            kwds['headers']['Cookie'] = cookies
+
+        if self.proxies:
+            kwds['proxies'] = self.proxies
+
         return kwds
 
     def _get_crawl(self):
@@ -127,18 +154,19 @@ class Task(Document):
     def crawl(self):
         try:
             if self.method == self.GET:
-                return self._get_crawl()
+                page_raw = self._get_crawl()
             elif self.method == self.POST:
-                return self._post_crawl()
-            else:
-                raise ValueError('error method')
-        except Exception:
-            self.current_retry_num += 1
-            if self.current_retry_num <= self.max_retry_num:
+                page_raw = self._post_crawl()
+            if not page_raw:
+                raise
+            return page_raw
+        except:
+            if self.current_retry_num < self.max_retry_num:
+                self.current_retry_num += 1
                 self.add(reason=self.REASON_RETYR)
-
-            self.current_retry_num -= 1  # 还原初始值
-            raise CrawlError(format_exception())
+                return None
+            else:
+                raise CrawlError(format_exception())
 
     def process(self, page_raw):
         try:
@@ -152,7 +180,7 @@ class Task(Document):
         assert not self.instance_id and env.instance_id
         self.instance_id = env.instance_id
         self.create_id()
-        self.second_rate_limit = self.template_class.config.get('second_rate_limit', 30)
+        self.second_rate_limit = self.template_class.config.get('second_rate_limit', 10)
 
         while 1:
             if PendingPool.get_current_task_num(self.instance_id) >= \
@@ -201,36 +229,36 @@ class Task(Document):
         from .pool import PendingPool
 
         self.instance_id = env.instance_id
-        self.create_id()
+        if not self.id:
+            self.create_id()
         self.second_rate_limit = self.template_class.config.get('second_rate_limit', 10)
         PendingPool.add(self)
 
     def add(self, reason=None):
+        assert self.method in [self.GET, self.POST]
 
         if env.mode == env.DISTRIBUTED:
-            if env.is_loading_seed_tasks:
-                # template
-                if reason == self.REASON_LOST:
-                    self.add_reason = self.REASON_LOST
-                    self._add_lost_task()
-                else:
-                    assert reason is None
-                    self.add_reason = self.REASON_SEED
-                    self._add_seed_task()
+            # template
+            if reason == self.REASON_LOST:
+                self.add_reason = self.REASON_LOST
+                self._add_lost_task()
             else:
-                # worker
-                if reason is None:
-                    self.add_reason = self.REASON_NEW
-                    self._add_new_task()
-                elif reason == self.REASON_RATE_LIMIT:
-                    self.add_reason = self.REASON_RATE_LIMIT
-                    self._add_rate_limit_task()
-                elif reason == self.REASON_RETYR:
-                    self.add_reason = self.REASON_RATE_LIMIT
-                    self._add_retry_task()
-                else:
-                    raise FrameError('unknown reason')
-
+                assert reason is None
+                self.add_reason = self.REASON_SEED
+                self._add_seed_task()
+        elif env.mode == env.WORK:
+            # worker
+            if reason is None:
+                self.add_reason = self.REASON_NEW
+                self._add_new_task()
+            elif reason == self.REASON_RATE_LIMIT:
+                self.add_reason = self.REASON_RATE_LIMIT
+                self._add_rate_limit_task()
+            elif reason == self.REASON_RETYR:
+                self.add_reason = self.REASON_RATE_LIMIT
+                self._add_retry_task()
+            else:
+                raise FrameError('unknown reason')
         elif env.mode == env.API:
             assert reason == self.REASON_MANUL_RETRY
             self.add_reason = self.REASON_MANUL_RETRY

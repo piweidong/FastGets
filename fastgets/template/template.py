@@ -32,24 +32,25 @@ class Template(object):
 
         for attr in dir(mod):
             template = getattr(mod, attr)
+            if not hasattr(template, '__bases__'):
+                continue
             if TemplateBase in template.__bases__:
                 return template
 
     @classmethod
     def get_list(cls):
         templates = []
-        print(env.TEMPLATES_DIR)
         for _, _, file_names in os.walk(env.TEMPLATES_DIR):
             for file_name in file_names:
                 path = env.TEMPLATES_DIR + file_name
-                if file_name != '__init__.py' and file_name.endswith('.py'):
-                    name = convert_path_to_name(path)
+                if file_name.endswith('.py') and file_name != '__init__.py':
+                    name = convert_path_to_name(path, 'template')
                     cls_ = cls._find_cls(name, path)
                     if cls_:
                         template = Template()
                         template.name = name
                         template.path = path
-                        template.description = cls_.__doc__.strip()
+                        template.description = (cls_.__doc__ or '').strip()
                         template.cls = cls_
                         templates.append(template)
         return templates
