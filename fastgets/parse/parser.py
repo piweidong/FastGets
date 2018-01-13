@@ -8,7 +8,7 @@ from werkzeug.routing import Map, Rule, NotFound
 from ..core.errors import NotSupported
 
 
-class ParseManager(object):
+class Parser(object):
 
     def __init__(self):
         self.url_map = Map(strict_slashes=False, host_matching=True,
@@ -20,7 +20,6 @@ class ParseManager(object):
 
     def parse_url(self, url_string):
         url = urllib.parse.urlparse(url_string)
-        url = self.validate_url(url)
         url_adapter = self.url_map.bind(server_name=url.hostname,
                                         url_scheme=url.scheme,
                                         path_info=url.path)
@@ -42,4 +41,4 @@ class ParseManager(object):
         site.play_actions(target=self)
 
 
-parser = ParseManager()
+parser = Parser()

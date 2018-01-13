@@ -15,7 +15,7 @@ class ClusterStats(object):
 
     @classmethod
     def incr(cls, name, pipe=None):
-        # name: success crawl_error process_error
+        # name: success crawl_error process_error retry lost
         SecondCounter.incr('cluster', name, pipe=pipe)
         DayCounter.incr('cluster', name, pipe=pipe)
 

@@ -10,7 +10,7 @@ class RunningPool(object):
 
     @classmethod
     def create_key(cls, instance_id):
-        return '{}:{}'.format('running_pool', instance_id)
+        return '{}:{}'.format(instance_id, 'running_pool')
 
     @classmethod
     def get_task_ids(cls, instance_id):

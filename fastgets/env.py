@@ -4,12 +4,12 @@
 TEST = 'test'
 LOCAL = 'local'
 DISTRIBUTED = 'distributed'
+WORK = 'work'
 API = 'api'
 
 mode = None
-is_loading_seed_tasks = False
 instance_id = None
 
 configured = False
 
-REDIS_CONFIG, MONGO_CONFIG, API_CONFIG, PROJECT_ROOT_DIR, TEMPLATES_DIR = [None] * 5
+REDIS_CONFIG, MONGO_CONFIG, API_CONFIG, PROJECT_ROOT_DIR, TEMPLATES_DIR, SCRIPTS_DIR, COOKIES_DIR = [None] * 7

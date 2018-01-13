@@ -24,6 +24,8 @@ def finish(task):
     logger.info('[crawl][{}][{}][start]'.format(task.func_name, task.url))
     try:
         page_raw = task.crawl()
+        if not page_raw:
+            return
     except CrawlError as e:
         task.crawl_error_traceback = e.traceback
         CrawlErrorPool.add(task)
@@ -45,7 +47,7 @@ def finish(task):
     try:
         task.process(page_raw)
     except ProcessError as e:
-        task.page_raw = page_raw
+        # task.page_raw = page_raw
         task.process_error_traceback = e.traceback
 
         ProcessErrorPool.add(task)
@@ -76,7 +78,7 @@ def finish(task):
 
 
 def run():
-    from fastgets.models import Instance, UnknownErrorLog  # 确保读取 config 后再连接 MongoDB
+    from fastgets.models import Instance, UnknownError  # 确保读取 config 后再连接 MongoDB
 
     logger.info('worker start')
     while 1:
@@ -103,12 +105,12 @@ def run():
                 # logger.info('worker is sleeping...')
                 time.sleep(1)
         except Exception:
-            UnknownErrorLog.add(format_exception())
+            UnknownError.add(format_exception())
             time.sleep(60)  # 需要 sleep 较长时间，否则会把 mongodb 打爆
 
 
 def main():
-    env.mode = env.DISTRIBUTED
+    env.mode = env.WORK
     config_parse()
     for i in range(10):
         time.sleep(0.1)
