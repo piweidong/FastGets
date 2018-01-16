@@ -30,8 +30,8 @@ setup(
     ],
 
     entry_points="""
-    [console_scripts]
-    fastgets_worker=fastgets.work:main
-    fastgets_api_server=fastgets.api.app:run
+        [console_scripts]
+        fastgets_work=fastgets.work:main
+        fastgets_api=fastgets.api.app:run
     """
 )
