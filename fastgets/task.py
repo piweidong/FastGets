@@ -1,6 +1,7 @@
 # coding: utf8
 import time
 import sys
+import urllib.parse
 import json
 import requests
 import tldextract
@@ -14,6 +15,7 @@ from .core.client import get_client
 from .utils import format_exception, create_id, time_readable, to_hash
 from .stats import InstanceStats
 from .headers import cookie_helper, user_agent_helper
+from .parse.utils import parse_url_query
 
 
 class Task(Document):
@@ -101,6 +103,27 @@ class Task(Document):
             module = path.replace('/', '.')
 
         self.template_class_path = '{}:{}'.format(module, template_class.__name__)
+
+    @property
+    def detail_url(self):
+        if '?' in self.url:
+            splits = self.url.split('?')
+            base_url = splits[0]
+            query_str = '?'.join(splits[1:])
+        else:
+            base_url, query_str = self.url, ''
+        query_dict = parse_url_query(query_str)
+        query_dict.update(self.get_payload)
+        if query_dict:
+            query_str = '&'.join(
+                [
+                    '='.join([k, urllib.parse.quote(str(v))])
+                    for k, v in query_dict.items()
+                ]
+            )
+            return '{}?{}'.format(base_url, query_str)
+        else:
+            return base_url
 
     def new(self):
         task = Task.from_json(self.to_json())

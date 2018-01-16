@@ -23,8 +23,8 @@ def to_hash(*args):
         elif isinstance(arg, str):
             arg = arg.encode('utf8')
         else:
-            arg = str(arg)
-        m.update(arg.encode('utf8'))
+            arg = str(arg).encode('utf8')
+        m.update(arg)
     return m.hexdigest()
 
 
@@ -36,6 +36,9 @@ def time_readable(dt):
         return dt.strftime('%Y-%m-%d %H:%M:%S')
     if dt.month != now.month and dt.day != now.day:
         return dt.strftime('%m-%d %H:%M:%S')
+
+    if (now-dt).seconds < 5:
+        return '刚刚'
 
     return dt.strftime('%H:%M:%S')
 

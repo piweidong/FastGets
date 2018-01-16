@@ -112,6 +112,6 @@ class Process(object):
     @classmethod
     def get_dict(cls, type):
         return {
-            process.id: process
+            process.name: process
             for process in cls.get_list(type)
         }

@@ -79,7 +79,7 @@ def instance_list_view():
     }
 
     def _(q):
-        instances = Instance.objects(q).order_by('-update_at').skip(request.start).limit(request.limit)
+        instances = Instance.objects(q).order_by('-start_at').skip(request.start).limit(request.limit)
         instances = [
             instance.to_api_json(process=process_dict.get(instance.process_id))
             for instance in instances

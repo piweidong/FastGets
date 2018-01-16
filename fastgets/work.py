@@ -1,5 +1,7 @@
 # coding: utf8
 
+import sys
+import os
 import threading
 import time
 
@@ -112,6 +114,9 @@ def run():
 def main():
     env.mode = env.WORK
     config_parse()
+
+    sys.path.insert(0, env.PROJECT_ROOT_DIR)
+
     for i in range(10):
         time.sleep(0.1)
         t = threading.Thread(target=run)

@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='FastGets',
-    version='0.1.6',
+    version='0.1.7',
     url='https://github.com/ShuJuHeiKe/FastGets',
     description='Python Crawling Framework for Humans',
     author='ShuJuHeiKe',
@@ -27,11 +27,12 @@ setup(
         'tldextract',
         'pytest==3.3.2',
         'mongomock==3.8.0',
+        'openpyxl==2.4.9',
     ],
 
     entry_points="""
-    [console_scripts]
-    fastgets_worker=fastgets.work:main
-    fastgets_api_server=fastgets.api.app:run
+        [console_scripts]
+        fastgets_work=fastgets.work:main
+        fastgets_api=fastgets.api.app:run
     """
 )

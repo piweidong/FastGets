@@ -3,6 +3,7 @@
 import datetime
 import re
 from lxml import etree, html
+import urllib.parse
 from ..core.errors import ParseError
 
 
@@ -73,3 +74,19 @@ def parse_time(s):
     if re.findall('\d{4}-\d{2}-\d{2}', s):
         # 2018-01-12
         return datetime.datetime.strptime(s, '%Y-%m-%d')
+
+
+def parse_url_query(url):
+    """
+    >>> parse_url_query('http://www.test.com?a=1&b=2')
+    {'a': '1', 'b': '2'}
+    """
+    query_dict = {}
+    query_str = url.split('?')[-1]
+    query_str = query_str.split('#')[0]
+    for query_item_str in query_str.split('&'):
+        if len(query_item_str.split('=', 1)) != 2:
+            continue
+        key, val = query_item_str.split('=', 1)
+        query_dict[key] = urllib.parse.unquote(val)
+    return query_dict

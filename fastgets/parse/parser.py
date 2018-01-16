@@ -26,13 +26,16 @@ class Parser(object):
         query_args = url_decode(url.query)
         return url, url_adapter, query_args
 
-    def dispatch_url(self, url_string, page_raw):
+    def dispatch_url(self, url_string, page_raw, **_kwargs):
         url, url_adapter, query_args = self.parse_url(url_string)
         try:
             endpoint, kwargs = url_adapter.match()
             kwargs.update(query_args)
         except NotFound:
             raise NotSupported(url_string)
+
+        kwargs.update(_kwargs)
+
         handler = import_string(endpoint)
         return handler(url_string, page_raw, kwargs)
 
