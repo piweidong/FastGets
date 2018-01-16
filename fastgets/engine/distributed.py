@@ -76,7 +76,8 @@ class DistributedEngine(Engine):
     def start_running_pool_monitor_thread(self):
         def _():
             logger.info('monitor start')
-            while self.instance.is_running():
+            while self.is_running():
+                print(self.running_pool_monitor.add_time_dict)
                 self.running_pool_monitor.loop()
                 time.sleep(self.running_pool_monitor.CHECK_INTERVAL_SECONDS)
 
@@ -85,7 +86,7 @@ class DistributedEngine(Engine):
 
     def start_instance_update_thread(self):
         def _():
-            while self.instance.is_running():
+            while self.is_running():
                 self.update_instance_from_redis()
                 self.sync_instance_from_mongo()
                 time.sleep(1)
@@ -100,10 +101,9 @@ class DistributedEngine(Engine):
             logger.info('load thread start')
             try:
                 self.template_class.load()
-            except Exception:
-                traceback_string = format_exception()
+            except:
                 Instance.objects(id=self.instance.id).update(
-                    set__traceback_string=traceback_string,
+                    set__traceback=format_exception(),
                     set__stop_at=datetime.datetime.now(),
                 )
                 logger.error('load thread error')
@@ -112,13 +112,18 @@ class DistributedEngine(Engine):
         self.seed_task_load_thread.start()
 
     def is_running(self):
-        return self.running_pool_monitor_thread.is_alive() or \
-               self.instance_update_thread.is_alive() or \
-               (self.instance.is_running() and not self.seed_task_load_thread.is_alive())
+        if self.instance.stop_at:
+            return False
+        if self.running_pool_monitor.add_time_dict:
+            return True
+        if self.instance.pending_task_num:
+            return True
+        if self.instance.is_active():
+            return True
+        else:
+            return False
 
     def run(self):
-        from ..models.instance import Instance
-
         self.start_running_pool_monitor_thread()
         self.start_instance_update_thread()
         self.start_seed_task_load_thread()

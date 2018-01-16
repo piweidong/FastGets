@@ -33,8 +33,8 @@ class RunningPool(object):
 
 class RunningPoolMonitor(object):
 
-    CHECK_INTERVAL_SECONDS = 10
-    MAX_RUNNING_SECONDS = 20
+    CHECK_INTERVAL_SECONDS = 3
+    MAX_RUNNING_SECONDS = 10
 
     def __init__(self, instance_id):
         self.instance_id = instance_id
@@ -54,11 +54,12 @@ class RunningPoolMonitor(object):
                 if not task:
                     raise FrameError('task 不存在')
                 task.add(reason=Task.REASON_LOST)
+                RunningPool.remove(task)
             else:
                 self.add_time_dict[task_id] = add_time
 
         for task_id in set(running_task_ids) - set(old_add_time_dict.keys()):
             self.add_time_dict[task_id] = now
 
-    def is_ready_to_finish(self):
-        return not bool(self.add_time_dict)
+    def is_empty(self):
+        return not self.add_time_dict

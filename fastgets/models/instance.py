@@ -3,7 +3,7 @@ import threading
 import datetime
 from mongoengine import *
 
-from ..utils import datetime2utc
+from ..utils import datetime2utc, time_readable
 from ..core.decorators import sync
 
 
@@ -33,7 +33,7 @@ class Instance(Document):
     avg_process_seconds = FloatField()
     task_active_at = DateTimeField()
 
-    traceback_string = StringField()
+    traceback = ListField(StringField())
 
     meta = {
         'collection': 'fastgets_instance',
@@ -45,17 +45,10 @@ class Instance(Document):
             return '手动停止'
         elif self.finish_at:
             return '正常完成'
-        elif (datetime.datetime.now()-self.update_at).seconds > 5:
+        elif (datetime.datetime.now()-self.update_at).seconds > 3:
             return '异常停止'
         else:
             return '正在运行'
-
-    def is_running(self):
-        if self.stop_at or self.finish_at:
-            return False
-        if (datetime.datetime.now()-self.task_active_at).seconds > 10:
-            return False
-        return True
 
     def is_stopped(self):
         return bool(self.stop_at)
@@ -64,30 +57,23 @@ class Instance(Document):
     def get(cls, id):
         return cls.objects.with_id(id)
 
-    def refresh(self):
-        pass
-
     def stop(self):
         Instance.objects(id=self.id).update(set__stop_at=datetime.datetime.now())
 
     def finish(self):
         Instance.objects(id=self.id).update(set__finish_at=datetime.datetime.now())
 
-    def to_api_json(self, **kwargs):
-        task_active_at = None
-        if self.task_active_at:
-            if (datetime.datetime.now()-self.task_active_at).seconds <= 5:
-                task_active_at = '刚刚'
-            else:
-                task_active_at = self.task_active_at.strftime('%m-%d %H:%M:%S')
+    def is_active(self):
+        return (datetime.datetime.now() - self.task_active_at).seconds < 30
 
+    def to_api_json(self, **kwargs):
         json_dict = dict(
             id=self.id,
             process_id=self.process_id,
             name=self.name,
             description=self.description,
-            start_at=datetime2utc(self.start_at),
-            finish_at=self.finish_at and datetime2utc(self.finish_at) or None,
+            start_at=self.start_at and time_readable(self.start_at) or None,
+            finish_at=self.finish_at and time_readable(self.finish_at) or None,
 
             total_task_num=self.total_task_num,
             pending_task_num=self.pending_task_num,
@@ -99,7 +85,7 @@ class Instance(Document):
 
             avg_crawl_seconds=self.avg_crawl_seconds,
             avg_process_seconds=self.avg_process_seconds,
-            task_active_at=task_active_at,
+            task_active_at=self.task_active_at and time_readable(self.task_active_at) or None,
 
             status=self.status,
         )
