@@ -20,3 +20,14 @@ def get_client():
             _client = mockredis.MockRedis(decode_responses=True)
 
     return _client
+
+
+_filter_client = None
+
+
+def get_filter_client():
+    from ..bloomfilter import BloomFilter
+    global _filter_client
+    if not _filter_client:
+        _filter_client = BloomFilter(get_client())
+    return _filter_client

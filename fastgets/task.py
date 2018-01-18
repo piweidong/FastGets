@@ -323,6 +323,7 @@ class Task(Document):
     def to_api_json(self):
         return dict(
             id=self.id,
+            instance_id=self.instance_id,
             func_name=self.func_name,
             url=self.url,
             method=self.method,
@@ -332,4 +333,5 @@ class Task(Document):
             crawl_seconds=self.crawl_seconds and round(self.crawl_seconds, 2) or None,
             process_seconds=self.process_seconds and round(self.process_seconds, 2) or None,
             error_traceback=self.crawl_error_traceback or self.process_error_traceback,
+            is_process_error=bool(self.process_error_traceback),
         )

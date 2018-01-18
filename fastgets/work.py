@@ -49,7 +49,7 @@ def finish(task):
     try:
         task.process(page_raw)
     except ProcessError as e:
-        # task.page_raw = page_raw
+        task.page_raw = page_raw
         task.process_error_traceback = e.traceback
 
         ProcessErrorPool.add(task)
