@@ -18,5 +18,4 @@ def task_page_raw_view():
         if _task.id == task_id:
             task = _task
 
-    print(task.page_raw)
     return render_template_string(task.page_raw)

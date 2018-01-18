@@ -159,30 +159,37 @@ class Task(Document):
         if self.get_payload:
             kwds['params'] = self.get_payload
 
-        r = requests.get(self.url, **kwds)
-        if self.encoding:
-            r.encoding = self.encoding
-        return r.text
+        return requests.get(self.url, **kwds)
 
     def _post_crawl(self):
         kwds = self._prepare_kwds()
         if self.post_payload:
             kwds['data'] = self.post_payload
 
-        r = requests.post(self.url, **kwds)
-        if self.encoding:
-            r.encoding = self.encoding
-        return r.text
+        return requests.post(self.url, **kwds)
 
     def crawl(self):
         try:
             if self.method == self.GET:
-                page_raw = self._get_crawl()
+                r = self._get_crawl()
             elif self.method == self.POST:
-                page_raw = self._post_crawl()
-            if not page_raw:
+                r = self._post_crawl()
+            else:
                 raise
-            return page_raw
+            content_type = r.headers['Content-Type']  # 可能需要兼容 等报错了再说
+
+            if 'text/html' in content_type:
+                if self.encoding:
+                    r.encoding = self.encoding
+                return r.text
+            elif 'application/json' in content_type:
+                return r.text  # 不使用 r.json()
+            elif 'application/pdf' in content_type:
+                return r.content
+            elif 'image' in content_type:
+                return r.content
+            else:
+                raise ValueError(content_type)
         except:
             if self.current_retry_num < self.max_retry_num:
                 self.current_retry_num += 1
