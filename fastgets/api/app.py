@@ -13,6 +13,7 @@ def create_app():
     from fastgets.api.views.instance import instance_blueprint
     from fastgets.api.views.job import job_blueprint
     from fastgets.api.views.process import process_blueprint
+    from fastgets.api.views.task import task_blueprint
     from fastgets.api.views.template import template_blueprint
 
     app.register_blueprint(cluster_blueprint)
@@ -20,6 +21,7 @@ def create_app():
     app.register_blueprint(instance_blueprint)
     app.register_blueprint(job_blueprint)
     app.register_blueprint(process_blueprint)
+    app.register_blueprint(task_blueprint)
     app.register_blueprint(template_blueprint)
 
     return app
@@ -39,6 +41,8 @@ def run():
 
     @app.after_request
     def after_request(response):
+        if request.path == '/task/page_raw':
+            return response
 
         # 正常返回的接口自动加上 error_code=0
         if response.status_code in [200, 304]:

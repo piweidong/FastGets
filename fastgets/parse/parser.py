@@ -34,6 +34,10 @@ class Parser(object):
         except NotFound:
             raise NotSupported(url_string)
 
+        for k, v in kwargs.items():
+            if isinstance(v, (tuple, list)) and len(v) == 1:
+                kwargs[k] == v[0]
+
         kwargs.update(_kwargs)
 
         handler = import_string(endpoint)
