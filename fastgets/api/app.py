@@ -9,18 +9,20 @@ def create_app():
     app = Flask(__name__)
 
     from fastgets.api.views.cluster import cluster_blueprint
-    from fastgets.api.views.fatal_error import fatal_error_blueprint
+    from fastgets.api.views.unknown_error import unknown_error_blueprint
     from fastgets.api.views.instance import instance_blueprint
     from fastgets.api.views.job import job_blueprint
     from fastgets.api.views.process import process_blueprint
+    from fastgets.api.views.script import script_blueprint
     from fastgets.api.views.task import task_blueprint
     from fastgets.api.views.template import template_blueprint
 
     app.register_blueprint(cluster_blueprint)
-    app.register_blueprint(fatal_error_blueprint)
+    app.register_blueprint(unknown_error_blueprint)
     app.register_blueprint(instance_blueprint)
     app.register_blueprint(job_blueprint)
     app.register_blueprint(process_blueprint)
+    app.register_blueprint(script_blueprint)
     app.register_blueprint(task_blueprint)
     app.register_blueprint(template_blueprint)
 

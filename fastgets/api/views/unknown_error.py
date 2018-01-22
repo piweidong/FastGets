@@ -9,11 +9,11 @@ from fastgets.utils import datetime2utc
 from fastgets.models import UnknownError
 
 
-fatal_error_blueprint = Blueprint('fatal_error', __name__, url_prefix='/fatal_error')
+unknown_error_blueprint = Blueprint('unknown_error', __name__, url_prefix='/unknown_error')
 
 
-@fatal_error_blueprint.route('/list')
-def fatal_error_list_view():
+@unknown_error_blueprint.route('/list')
+def unknown_error_list_view():
 
     errors = UnknownError.objects.order_by('-create_at').limit(100)
 
@@ -27,7 +27,7 @@ def fatal_error_list_view():
     ))
 
 
-@fatal_error_blueprint.route('/flushall')
-def fatal_error_flushall_view():
+@unknown_error_blueprint.route('/flushall')
+def unknown_error_flushall_view():
     UnknownError.drop_collection()
     return jsonify()
