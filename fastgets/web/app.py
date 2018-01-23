@@ -6,7 +6,12 @@ from fastgets.core import config_parse
 
 
 def create_app():
-    app = Flask(__name__, static_folder='static/dist', template_folder='static',)
+    from fastgets import env
+    app = Flask(
+        __name__,
+        static_folder='{}fastgets/web/static/dist'.format(env.FASTGETS_DIR),
+        template_folder='{}fastgets/web/static'.format(env.FASTGETS_DIR)
+    )
 
     from fastgets.web.views.cluster import cluster_blueprint
     from fastgets.web.views.unknown_error import unknown_error_blueprint

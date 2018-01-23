@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='FastGets',
-    version='0.2.5',
+    version='0.2.7',
     url='https://github.com/ShuJuHeiKe/FastGets',
     description='Python Crawling Framework for Humans',
     author='ShuJuHeiKe',

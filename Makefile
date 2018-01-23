@@ -7,5 +7,3 @@ test: clear_pyc
 
 pub: 
 	python3 setup.py sdist upload
-
-
