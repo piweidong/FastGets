@@ -3,13 +3,15 @@ from setuptools import setup, find_packages
 
 setup(
     name='FastGets',
-    version='0.2.7',
+    version='0.2.8',
     url='https://github.com/ShuJuHeiKe/FastGets',
     description='Python Crawling Framework for Humans',
     author='ShuJuHeiKe',
     maintainer='XuYong',
     maintainer_email='tonyxuourlove@gmail.com',
     packages=find_packages(),
+    include_package_data=True,
+    zip_safe=False,
     license='BSD',
     install_requires=[
         'werkzeug==0.13',
