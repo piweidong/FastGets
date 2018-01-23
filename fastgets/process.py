@@ -5,7 +5,7 @@ import sys
 import subprocess
 import psutil
 from .core.errors import ApiError
-from .utils import utc2datetime
+from .utils import utc2datetime, time_readable, convert_path_to_name
 from . import env
 
 
@@ -15,7 +15,6 @@ class Process(object):
         self.id = None
         self.name = None
         self.path = None
-        self.template_name = None
         self.memory_percent = None
         self.thread_num = None
         self.create_at = None
@@ -32,6 +31,9 @@ class Process(object):
         return dict(
             id=self.id,
             name=self.name,
+            cpu_percent=self.cpu_percent,
+            memory_percent=self.memory_percent(),
+            create_at=self.create_at and time_readable(self.create_at) or None,
         )
 
     @classmethod
@@ -70,9 +72,7 @@ class Process(object):
     def get_type(cls, _process):
         try:
             cmdline = _process.cmdline()
-            # print(cmdline)
-            if len(cmdline) >= 2 :
-                # and _process.name() == sys.executable
+            if len(cmdline) >= 2:
                 if env.TEMPLATES_DIR in cmdline[1]:
                     return 'template'
                 if env.SCRIPTS_DIR in cmdline[1]:
@@ -87,7 +87,11 @@ class Process(object):
         process = Process()
         process.id = str(_process.pid)
         process.path = _process.cmdline()[1]
-        process.name = process.path.split(env.TEMPLATES_DIR)[-1][:-len('.py')]
+        if env.TEMPLATES_DIR in process.path:
+            process.name = convert_path_to_name(process.path, 'template')
+        else:
+            process.name = convert_path_to_name(process.path, 'script')
+
         process.memory_percent = _process.memory_percent
         process.thread_num = _process.num_threads()
         process.create_at = utc2datetime(_process.create_time())

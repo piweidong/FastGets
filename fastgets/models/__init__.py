@@ -8,7 +8,7 @@ from .instance import Instance
 from .script_log import ScriptLog
 
 
-if env.mode in [env.DISTRIBUTED, env.WORK, env.API]:
+if env.mode in [env.DISTRIBUTED, env.WORK, env.API, env.SCRIPT]:
     if env.configured:
         # 这里不能简单实用 mock 的方式，可能会影响到用户层项目
         connect(

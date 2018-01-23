@@ -7,6 +7,8 @@ from ..utils import convert_path_to_name, format_exception, create_id
 
 def log(func):
     def catch_args(*args, **kwargs):
+        env.mode = env.SCRIPT
+
         from ..models import ScriptLog
 
         path = sys.argv[0]

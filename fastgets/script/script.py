@@ -24,7 +24,7 @@ class Script(object):
         scripts = []
         for _, _, file_names in os.walk(env.SCRIPTS_DIR):
             for file_name in file_names:
-                path = env.TEMPLATES_DIR + file_name
+                path = env.SCRIPTS_DIR + file_name
                 if file_name.endswith('.py') and file_name != '__init__.py':
                     name = convert_path_to_name(path, 'script')
                     script = cls()

@@ -61,7 +61,6 @@ class Job(object):
                 raise ApiError('script:{} not found'.format(name))
             each = cron.new(command='{} {}'.format(sys.executable, script.path))
 
-        print(each.command)
         each.setall(trigger)
         each.set_comment(job_id)
         if each.is_valid():
