@@ -6,6 +6,7 @@ LOCAL = 'local'
 DISTRIBUTED = 'distributed'
 WORK = 'work'
 API = 'api'
+SCRIPT = 'script'
 
 mode = None
 instance_id = None

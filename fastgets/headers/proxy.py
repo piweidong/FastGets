@@ -9,7 +9,7 @@ from ..core.errors import NoProxyError
 
 class Proxy(object):
 
-    def __init__(self, host, port, user=None, password=None):
+    def __init__(self, host=None, port=None, user=None, password=None):
         # TODO 合法性检查
         self.host = host
         self.port = port
@@ -37,7 +37,7 @@ class ProxyHelper(object):
     @sync(threading.Lock())
     def random_choice(self):
         # TODO 支持更加复杂的 proxy 调度逻辑？
-        if self.fetch_func and (time.time()-self.last_fetch_at) >= self.cache_seconds:
+        if hasattr(self, 'fetch_func') and (time.time()-self.last_fetch_at) >= self.cache_seconds:
             self.fetch_proxy_list()
 
         if not self.proxy_list:

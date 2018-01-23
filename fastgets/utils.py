@@ -84,7 +84,7 @@ def convert_path_to_name(path, type):
     if type == 'template':
         dir_path = env.TEMPLATES_DIR
     elif type == 'script':
-        dir_path = env.TEMPLATES_DIR
+        dir_path = env.SCRIPTS_DIR
     else:
         raise
 
