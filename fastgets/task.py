@@ -41,6 +41,7 @@ class Task(Document):
     method = StringField(default='GET')
     get_payload = DictField()
     post_payload = DictField()
+    certificate_verify = BooleanField(default=True)
     use_cookie = BooleanField(default=False)
     proxies = DictField()
 
@@ -159,14 +160,14 @@ class Task(Document):
         if self.get_payload:
             kwds['params'] = self.get_payload
 
-        return requests.get(self.url, **kwds)
+        return requests.get(self.url, verify=self.certificate_verify, **kwds)
 
     def _post_crawl(self):
         kwds = self._prepare_kwds()
         if self.post_payload:
             kwds['data'] = self.post_payload
 
-        return requests.post(self.url, **kwds)
+        return requests.post(self.url, verify=self.certificate_verify, **kwds)
 
     def crawl(self):
         try:
