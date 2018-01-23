@@ -13,7 +13,12 @@ if env.mode in [env.DISTRIBUTED, env.WORK, env.API, env.SCRIPT]:
         # 这里不能简单实用 mock 的方式，可能会影响到用户层项目
         connect(
             env.MONGO_CONFIG['db'], host=env.MONGO_CONFIG['host'], port=env.MONGO_CONFIG['port'],
+<<<<<<< HEAD
             username=env.MONGO_CONFIG.get('username'), password=env.MONGO_CONFIG.get('password'))
+=======
+            username=env.MONGO_CONFIG.get('username'), password=env.MONGO_CONFIG.get('password')
+        )
+>>>>>>> 33b7a2937923cf7505808122d5fb81074c733d1a
     else:
         raise ValueError('must call fastgets.init_fastgets_env to init env')
 
