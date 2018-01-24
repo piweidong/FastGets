@@ -9,7 +9,7 @@ def create_app():
     from fastgets import env
     app = Flask(
         __name__,
-        static_folder='{}fastgets/web/static/dist'.format(env.FASTGETS_DIR),
+        static_url_path='',
         template_folder='{}fastgets/web/static'.format(env.FASTGETS_DIR)
     )
 
