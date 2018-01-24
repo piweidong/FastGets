@@ -68,7 +68,7 @@ def run():
 
         return response
 
-    app.run(env.API_CONFIG['host'], env.API_CONFIG['port'], debug=env.API_CONFIG.get('debug', False))
+    app.run(env.WEB_CONFIG['host'], env.WEB_CONFIG['port'], debug=env.WEB_CONFIG.get('debug', False))
 
 
 if __name__ == '__main__':

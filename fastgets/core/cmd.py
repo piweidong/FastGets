@@ -8,7 +8,7 @@ def init_fastgets_env(config):
     # todo 合法性检查
     env.REDIS_CONFIG = config.REDIS_CONFIG
     env.MONGO_CONFIG = config.MONGO_CONFIG
-    env.API_CONFIG = config.API_CONFIG
+    env.WEB_CONFIG = config.WEB_CONFIG
     env.PROJECT_ROOT_DIR = config.PROJECT_ROOT_DIR
     env.TEMPLATES_DIR = config.TEMPLATES_DIR
     env.SCRIPTS_DIR = config.SCRIPTS_DIR
