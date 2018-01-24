@@ -310,6 +310,8 @@ class Task(Document):
         assert id
         task_json = get_client().get(id)
         if task_json:
+            if isinstance(task_json, bytes):
+                task_json = task_json.decode('utf8')
             return cls.from_json(task_json)
 
     @classmethod
