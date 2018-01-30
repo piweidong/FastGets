@@ -2,10 +2,8 @@
 import time
 import sys
 import urllib.parse
-import requests
 import json
-import zlib
-from websocket import create_connection
+import requests
 import tldextract
 from werkzeug.utils import import_string
 from mongoengine import *
@@ -24,7 +22,6 @@ class Task(Document):
 
     GET = 'GET'
     POST = 'POST'
-    WS = 'ws'
 
     REASON_SEED = 'seed'
     REASON_NEW = 'new'
@@ -44,7 +41,6 @@ class Task(Document):
     method = StringField(default='GET')
     get_payload = DictField()
     post_payload = DictField()
-    ws_payload = StringField()
     certificate_verify = BooleanField(default=True)
     use_cookie = BooleanField(default=False)
     proxies = DictField()
@@ -179,11 +175,6 @@ class Task(Document):
                 r = self._get_crawl()
             elif self.method == self.POST:
                 r = self._post_crawl()
-            elif self.method == self.WS:
-                ws = create_connection(self.url)
-                ws.send(self.ws_payload)
-                data = zlib.decompress(ws.recv(), zlib.MAX_WBITS | 16).decode('utf8')
-                return data
             else:
                 raise
             content_type = r.headers['Content-Type']  # 可能需要兼容 等报错了再说
@@ -199,7 +190,7 @@ class Task(Document):
             elif 'image' in content_type:
                 return r.content
             else:
-                return r.content
+                return r.text
         except:
             if self.current_retry_num < self.max_retry_num:
                 self.current_retry_num += 1
@@ -275,7 +266,7 @@ class Task(Document):
         PendingPool.add(self)
 
     def add(self, reason=None):
-        assert self.method in [self.GET, self.POST, self.WS]
+        assert self.method in [self.GET, self.POST]
 
         if env.mode == env.DISTRIBUTED:
             # template
@@ -348,7 +339,6 @@ class Task(Document):
             method=self.method,
             get_payload=self.get_payload,
             post_payload=self.post_payload,
-            ws_payload=self.ws_payload,
             temp_data=self.temp_data,
             crawl_seconds=self.crawl_seconds and round(self.crawl_seconds, 2) or None,
             process_seconds=self.process_seconds and round(self.process_seconds, 2) or None,
