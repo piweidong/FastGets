@@ -90,3 +90,50 @@ def parse_url_query(url):
         key, val = query_item_str.split('=', 1)
         query_dict[key] = urllib.parse.unquote(val)
     return query_dict
+
+
+def is_url(url):
+    # 复制并修改自: mongoengine/fields.py URLField()
+
+    _URL_REGEX = re.compile(
+        r'^(?:[a-z0-9\.\-]*)://'  # scheme is validated separately
+        r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}(?<!-)\.?)|'  # domain...
+        r'localhost|'  # localhost...
+        r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}|'  # ...or ipv4
+        r'\[?[A-F0-9]*:[A-F0-9:]+\]?)'  # ...or ipv6
+        r'(?::\d+)?'  # optional port
+        r'(?:/?|[/?]\S+)$', re.IGNORECASE)
+    _URL_SCHEMES = ['http', 'https', 'ftp', 'ftps']
+
+    if not url:
+        return False
+
+    scheme = url.split('://')[0].lower()
+    if scheme not in _URL_SCHEMES:
+        return False
+
+    if not _URL_REGEX.match(url):
+        return False
+
+    return True
+
+
+def is_email(email):
+    # 复制并修改自: mongoengine/fields.py EmailField()
+
+    EMAIL_REGEX = re.compile(
+        # dot-atom
+        r"(^[-!#$%&'*+/=?^_`{}|~0-9A-Z]+(\.[-!#$%&'*+/=?^_`{}|~0-9A-Z]+)*"
+        # quoted-string
+        r'|^"([\001-\010\013\014\016-\037!#-\[\]-\177]|\\[\001-011\013\014\016-\177])*"'
+        # domain (max length of an ICAAN TLD is 22 characters)
+        r')@(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}|[A-Z0-9-]{2,}(?<!-))$', re.IGNORECASE
+    )
+
+    if not email:
+        return False
+
+    if not EMAIL_REGEX.match(email):
+        return False
+
+    return True
