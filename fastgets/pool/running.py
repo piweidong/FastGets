@@ -34,7 +34,7 @@ class RunningPool(object):
 class RunningPoolMonitor(object):
 
     CHECK_INTERVAL_SECONDS = 3
-    MAX_RUNNING_SECONDS = 60
+    MAX_RUNNING_SECONDS = 300
 
     def __init__(self, instance_id):
         self.instance_id = instance_id
